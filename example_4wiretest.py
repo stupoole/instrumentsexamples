@@ -1,10 +1,10 @@
-import Instruments
+import instruments
 import time
 import numpy as np
 from tkinter import filedialog as dialog
 
-sb = Instruments.SwitchBox()
-pg = Instruments.K2461()
+sb = instruments.SwitchBox()
+pg = instruments.K2461()
 sb.connect(8)
 pg.connect()
 probe_current = 100e-6

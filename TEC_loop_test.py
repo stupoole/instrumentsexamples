@@ -1,10 +1,10 @@
-import Instruments
+import instruments
 import numpy as np
 import time
 import matplotlib.pyplot as plt
 
 
-tec = Instruments.TEC1089SV()
+tec = instruments.TEC1089SV()
 
 print(tec.connect(14))
 tec.set_target_temperature(21)

@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 import time
 import numpy as np
 from tkinter import filedialog as dialog
@@ -10,8 +10,8 @@ assignments_135 = {"I+": "D", "I-": "H"}
 probe_current = 100e-6
 
 R = np.zeros(4)
-sb = Instruments.SwitchBox()
-pg = Instruments.K2461()
+sb = instruments.SwitchBox()
+pg = instruments.K2461()
 sb.connect(8)
 pg.connect()
 

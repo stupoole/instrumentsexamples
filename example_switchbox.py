@@ -4,9 +4,9 @@ import time
 # import tkinter.messagebox as mb
 # from tkinter import filedialog as dialog
 import matplotlib
-import Instruments
+import instruments
 
-switchbox = Instruments.SwitchBox()
+switchbox = instruments.SwitchBox()
 #dual arm pulsing
 pulse1_assignments = {"I+": "BD", "I-": "FH"}
 # single arm pulsing

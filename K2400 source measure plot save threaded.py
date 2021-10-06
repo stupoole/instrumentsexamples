@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
@@ -29,7 +29,7 @@ class Plotter:
 
     def __init__(self, port, meas_curr, max_time):
         self.max_time = max_time
-        self.source_meter = Instruments.K2400()
+        self.source_meter = instruments.K2400()
         self.source_meter.connect(port)
         self.current = meas_curr
         self.plot_queue = queue.Queue()

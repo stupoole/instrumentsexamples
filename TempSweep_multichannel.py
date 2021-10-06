@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -20,14 +20,14 @@ temp_xy = np.array([])
 meas_ass1 = {"I+": "A", "I-": "F", "V1+": "B", "V1-": "C", "V2+": "D", "V2-": "E"}
 meas_ass2 = {"I+": "A", "I-": "F", "V1+": "C", "V1-": "H", "V2+": "D", "V2-": "G"}
 
-error_sound = Instruments.error_sound
-alert_sound = Instruments.alert_sound
+error_sound = instruments.error_sound
+alert_sound = instruments.alert_sound
 
-sb = Instruments.SwitchBox()
-dmm = Instruments.K2000()
-pg = Instruments.K2461()
+sb = instruments.SwitchBox()
+dmm = instruments.K2000()
+pg = instruments.K2461()
 
-tec = Instruments.TEC1089SV()
+tec = instruments.TEC1089SV()
 sb.connect(18)
 dmm.connect(10)
 pg.connect()

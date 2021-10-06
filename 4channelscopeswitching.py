@@ -1,6 +1,6 @@
 import time
 import numpy as np
-import Instruments
+import instruments
 import matplotlib.pyplot as plt
 
 from tkinter import filedialog as dialog
@@ -14,12 +14,12 @@ probe_current = 200e-6
 n_points = 1000
 n_loops = 2
 
-sb = Instruments.SwitchBox()
-dmm = Instruments.K2000()
-pg = Instruments.K2461()
-scope = Instruments.DS1104()
-error_sound = Instruments.error_sound
-alert_sound = Instruments.alert_sound
+sb = instruments.SwitchBox()
+dmm = instruments.K2000()
+pg = instruments.K2461()
+scope = instruments.DS1104()
+error_sound = instruments.error_sound
+alert_sound = instruments.alert_sound
 
 sb.connect()
 dmm.connect()

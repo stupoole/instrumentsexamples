@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,7 +24,7 @@ curr_list = np.concatenate((np.linspace(0, I_max, round(I_max / step) + 1),
                             np.linspace(I_max - step, -I_max, round(2 * I_max / step)),
                             np.linspace(-I_max + step, 0, round(I_max / step))))
 
-source = Instruments.K6221()
+source = instruments.K6221()
 source.connect_ethernet()
 source.set_compliance(60)
 source.set_sense_chan_and_range(channel, volt_range)

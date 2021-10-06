@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 import matplotlib
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
@@ -36,11 +36,11 @@ class Plotter:
         @param float meas_curr: probe current in Amps provided by K2400
         """
         self._field_calibration = 15e-3  # V/T
-        self.source_meter = Instruments.K2400()
-        self.sense_meter = Instruments.K2400()
-        self.rxy_1_meter = Instruments.K2000()
-        self.rxy_2_meter = Instruments.K2000()
-        self.field_meter = Instruments.K2000()
+        self.source_meter = instruments.K2400()
+        self.sense_meter = instruments.K2400()
+        self.rxy_1_meter = instruments.K2000()
+        self.rxy_2_meter = instruments.K2000()
+        self.field_meter = instruments.K2000()
 
         self.source_meter.connect(ports[0])
         self.sense_meter.connect(ports[1])

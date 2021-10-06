@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,12 +28,12 @@ pulse2_assignments = {"I+": "D", "I-": "H"}
 measure_assignments = {"V1+": "C", "V1-": "E", "V2+": "D", "V2-": "H"}
 # measure_assignments = {"I+": "C", "I-": "G", "V1+": "C", "V1-": "G", "V2+": "E", "V2-": "A"}
 
-top_lockin = Instruments.SR830_RS232()
-bot_lockin = Instruments.SR830_RS232()
-source = Instruments.K6221()
-sb = Instruments.SwitchBox()
-pg = Instruments.K2461()
-# dmm = Instruments.K2000()
+top_lockin = instruments.SR830_RS232()
+bot_lockin = instruments.SR830_RS232()
+source = instruments.K6221()
+sb = instruments.SwitchBox()
+pg = instruments.K2461()
+# dmm = instruments.K2000()
 
 
 sb.connect(15)

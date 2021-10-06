@@ -1,9 +1,9 @@
-import Instruments
+import instruments
 import time
 
-sb = Instruments.SwitchBox()
-pg = Instruments.K2461()
-bb = Instruments.BalanceBox()
+sb = instruments.SwitchBox()
+pg = instruments.K2461()
+bb = instruments.BalanceBox()
 sb.connect(4)
 pg.connect()
 bb.connect(5)

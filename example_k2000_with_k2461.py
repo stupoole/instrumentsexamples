@@ -1,14 +1,14 @@
 import time
 import matplotlib.pyplot as plt
-import Instruments
+import instruments
 
 # This scripts measures the 4 wire resistance using the k2461 as a source meter.
 
-# first create instrument objects using Instruments.instrumentname()
-pg = Instruments.K2461()
-dmm = Instruments.K2000()
+# first create instrument objects using instruments.instrumentname()
+pg = instruments.K2461()
+dmm = instruments.K2000()
 
-# Then connect to the Instruments. Some need ports some need a GPIB address also
+# Then connect to the instruments. Some need ports some need a GPIB address also
 dmm.connect(4)
 pg.connect()
 

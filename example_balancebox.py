@@ -1,9 +1,9 @@
 import time
-import Instruments
+import instruments
 
 # Change the port and run this and listen for clicking. the 5s delays are to test the resistances
 resistances = {"A": 50, "B": 50, "C": 50, "D": 50, "E": 50, "F": 50, "G": 50, "H": 50}
-balance_box = Instruments.BalanceBox()
+balance_box = instruments.BalanceBox()
 balance_box.connect(5)
 
 #  Disable all channels to close all connections

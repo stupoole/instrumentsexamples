@@ -1,2 +1,2 @@
 # instrumentsexamples
-Examples of scripts using my Instruments Package: https://github.com/stupoole/instruments
+Examples of scripts using my instruments Package: https://github.com/stupoole/instruments

@@ -1,6 +1,6 @@
 import numpy as np
 import time
-import Instruments
+import instruments
 
 ## This script measures the resistance of each pulsing channel in an 8 arm device. The resulting resistances are left
 # assigned to the bb and therefore can be used for pulsing after or the resulting assignments can be copied from the
@@ -18,9 +18,9 @@ resistance_assigned = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "
 resistance_measured = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
 
 # create instrument objects
-switch_box = Instruments.SwitchBox()
-balance_box = Instruments.BalanceBox()
-pg = Instruments.K2461()
+switch_box = instruments.SwitchBox()
+balance_box = instruments.BalanceBox()
+pg = instruments.K2461()
 
 # connect to devices
 switch_box.connect(15)

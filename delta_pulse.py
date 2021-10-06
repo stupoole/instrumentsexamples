@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ volt_range = 100e-3
 width = 500e-6
 
 current = np.tile(np.linspace(start, stop, round((stop - start) / step) + 1), repeats)
-source = Instruments.K6221()
+source = instruments.K6221()
 source.connect_ethernet()
 source.set_compliance(40)
 source.set_sense_chan_and_range(channel, volt_range)

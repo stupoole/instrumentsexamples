@@ -1,11 +1,11 @@
-import Instruments
+import instruments
 import time
 import numpy as np
 from tkinter import filedialog as dialog
 
-sb = Instruments.SwitchBox()
-pg = Instruments.K2400()
-bb = Instruments.BalanceBox()
+sb = instruments.SwitchBox()
+pg = instruments.K2400()
+bb = instruments.BalanceBox()
 
 assignments_0 = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"}
 assignments_1 = {"I+": "A", "I-": "E", "V1+": "H", "V1-": "F"}

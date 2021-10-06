@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -12,13 +12,13 @@ Rxx = np.array([])
 Rxy = np.array([])
 tec_volts = np.array([])
 
-error_sound = Instruments.error_sound
-alert_sound = Instruments.alert_sound
+error_sound = instruments.error_sound
+alert_sound = instruments.alert_sound
 
-sb = Instruments.SwitchBox()
-dmm = Instruments.K2000()
-pg = Instruments.K2461()
-# tec = Instruments.TEC1089SV()
+sb = instruments.SwitchBox()
+dmm = instruments.K2000()
+pg = instruments.K2461()
+# tec = instruments.TEC1089SV()
 sb.connect(15)
 dmm.connect(16)
 pg.connect()

@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import matplotlib
-import Instruments
+import instruments
 import winsound
 from tkinter import filedialog as dialog
 
@@ -41,13 +41,13 @@ neg_rxx = np.array([])
 pos_rxy = np.array([])
 neg_rxy = np.array([])
 
-switch_box = Instruments.SwitchBox()  # make a sb object
-pulse_generator = Instruments.K2461()  # make a k2461 object
-keithley = Instruments.K2000()  # make a k2000 object
-balance_box = Instruments.BalanceBox()
+switch_box = instruments.SwitchBox()  # make a sb object
+pulse_generator = instruments.K2461()  # make a k2461 object
+keithley = instruments.K2000()  # make a k2000 object
+balance_box = instruments.BalanceBox()
 start_time = time.time()  # use this for the graphing only
 
-# actually connect to the Instruments
+# actually connect to the instruments
 pulse_generator.connect()
 switch_box.connect(4)
 keithley.connect(3)
@@ -77,7 +77,7 @@ for i in range(num_loops):
     plt.pause(200e-3)
     keithley.trigger()  # actually starts measuring
     pulse_generator.trigger()  # actually starts the measuring
-    # the Instruments will wait for their "timeout" duration anyway but for large N manually waiting is necesasry
+    # the instruments will wait for their "timeout" duration anyway but for large N manually waiting is necesasry
     plt.pause(measure_delay)
     # reads the values
     t, vxx, curr = pulse_generator.read_buffer(measure_number)
