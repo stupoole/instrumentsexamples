@@ -78,7 +78,7 @@ plt.pause(1)
 start_time = time.time()
 while tec.get_temp_stability_state() is not "stable":
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     temp = np.append(temp, tec.get_object_temperature())
     vxx, curr = pg.fetch_one()
@@ -107,7 +107,7 @@ tic = 0
 print(f"Target reached. Measuring for {end_wait_time} seconds")
 while tic < end_wait_time:
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     temp = np.append(temp, tec.get_object_temperature())
     vxx, curr = pg.fetch_one()

@@ -26,7 +26,7 @@ for ass in range(4):
     time.sleep(200e-3)
     for i in range(1, 50, 2):
         current = i * 1e-6
-        pg.measure_n(current, 10)
+        pg.prepare_measure_n(current, 10)
         time.sleep(100e-3)
         pg.trigger()
         time.sleep(3)

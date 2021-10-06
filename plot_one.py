@@ -47,6 +47,7 @@ import tkinter as tk
 from tkinter import filedialog
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import signal
 
 import os
 
@@ -56,17 +57,28 @@ filename = filedialog.askopenfilename(initialdir='../DATA/',
                                       title='Select a switching file',
                                       filetypes=(('data files', '*.txt *.dat'), ('all files', '*.*')))
 
-data = np.loadtxt(filename, delimiter='\t')
+data = np.loadtxt(filename, delimiter='\t', skiprows=1)
 
-current = data[:, 0]*1e3
+# x = data[:, 0]
+# y = data[:,3]
+x = data[:, 6] / 15e-3
+rxy_sum = data[:, 4] + data[:, 5]
+rxy_diff = -data[:, 4] + data[:, 5]
 
-voltage = -data[:, 1]
-
-
-
-rxx_pos_line, = plt.plot(current, voltage, 'k.')
-# plt.plot([min(current), max(current)], [min(voltage), max(voltage)])
+rxx_diff = -data[:, 2] + data[:, 3]
+rxx_part = np.mean(data[:, 2]) + np.mean(data[:, 3])
+y = signal.savgol_filter(200*rxy_sum/rxx_part, 31, 3)
+y = data[:, 2]
+y2 = signal.savgol_filter(200*(rxx_diff- np.mean(rxy_diff[0:20]))/rxx_part, 11, 3)
+y2 -= np.min(y2)
+line, = plt.plot(x, y, 'k.')
+# # plt.plot([min(current), max(current)], [min(voltage), max(voltage)])
 plt.ticklabel_format(useOffset=False)
-plt.xlabel('Current (mA)')
-plt.ylabel('Voltage (V)')
+plt.xlabel('Field (T)')
+plt.ylabel('Sum AMR (%)')
+plt.figure()
+line2, = plt.plot(x, y2, 'b.')
+plt.ylabel('Diff AMR (%)')
+plt.xlabel('Field (T)')
+plt.grid()
 plt.show()

@@ -6,7 +6,7 @@ import Instruments
 import matplotlib.pyplot as plt
 import sys
 import serial
-import visa
+import pyvisa
 from PyQt5 import QtCore, QtWidgets, uic
 
 # Todo: replace tkinter boxes with qt
@@ -199,7 +199,7 @@ class DataCollector(QtCore.QObject):
                 self.tec.connect(port)
                 self.tec.set_target_temperature(target)
                 self.tec.enable_control()
-            except visa.VisaIOError:
+            except pyvisa.pyvisaIOError:
                 print(f'Could not connect to TEC on port {port} or could not set temperature to {target}')
                 self.stable.emit()
                 return
@@ -214,7 +214,7 @@ class DataCollector(QtCore.QObject):
         #         self.hts.connect(port)
         #         self.hts.set_target_temperature(target)
         #         self.hts.enable_control()
-        #     except visa.VisaIOError:
+        #     except pyvisa.pyvisaIOError:
         #         print('Could not connect to HTS on port ' + port + ' or could not set temperature to ' + target)
         #         return
 
@@ -224,7 +224,7 @@ class DataCollector(QtCore.QObject):
         self.tec_enabled = False
         try:
             self.tec.disable_control()
-        except visa.VisaIOError:
+        except pyvisa.pyvisaIOError:
             print('Could not send disable output command to TEC')
         self.tec.close()
 
@@ -265,7 +265,7 @@ class DataCollector(QtCore.QObject):
                 tec_data = np.zeros(meas_n)
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
-                self.pg.trigger_fetch()
+                self.pg.trigger_before_fetch()
                 self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
@@ -313,7 +313,7 @@ class DataCollector(QtCore.QObject):
                 tec_data = np.zeros(meas_n)
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
-                self.pg.trigger_fetch()
+                self.pg.trigger_before_fetch()
                 self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
@@ -429,7 +429,7 @@ class DataCollector(QtCore.QObject):
                 # self.scope.single_trig()
                 self.scope_enabled = True
                 time.sleep(12)
-            except visa.VisaIOError:
+            except pyvisa.pyvisaIOError:
                 error_sound()
                 print("Could not connect to RIGOL DS1104Z.")
                 connection_flag = True
@@ -438,14 +438,14 @@ class DataCollector(QtCore.QObject):
 
         try:
             self.dmm.connect(dmm_port)
-        except visa.VisaIOError:
+        except pyvisa.pyvisaIOError:
             error_sound()
             print(f"Could not connect to Keithley2000 on port COM{dmm_port}.")
             connection_flag = True
 
         try:
             self.pg.connect()
-        except visa.VisaIOError:
+        except pyvisa.pyvisaIOError:
             error_sound()
             print("Could not connect to keithley 2461.")
             connection_flag = True

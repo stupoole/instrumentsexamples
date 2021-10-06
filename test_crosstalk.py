@@ -74,7 +74,7 @@ t = 0
 
 while t < 600:
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     # tec_volts = np.append(tec_volts, tec.get_output_voltage())
     vxx, curr = pg.fetch_one()

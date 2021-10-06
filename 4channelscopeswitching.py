@@ -112,7 +112,7 @@ for loop_count in range(n_loops):
     curr = np.zeros(n_points)
     for meas_count in range(n_points):
         t[meas_count] = time.time()
-        pg.trigger_fetch()
+        pg.trigger_before_fetch()
         dmm.trigger()
         vxx[meas_count], curr[meas_count] = pg.fetch_one()
         vxy[meas_count] = dmm.fetch_one()
@@ -167,7 +167,7 @@ for loop_count in range(n_loops):
     curr = np.zeros(n_points)
     for meas_count in range(n_points):
         t[meas_count] = time.time()
-        pg.trigger_fetch()
+        pg.trigger_before_fetch()
         dmm.trigger()
         vxx[meas_count], curr[meas_count] = pg.fetch_one()
         vxy[meas_count] = dmm.fetch_one()

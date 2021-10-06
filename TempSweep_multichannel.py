@@ -89,7 +89,7 @@ while tec.get_temp_stability_state() is not "stable":
     dmm.prepare_measure_one()
     time.sleep(0.5)
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     temp_xx = np.append(temp_xx, tec.get_object_temperature())
     vxx1, curr = pg.fetch_one()
@@ -105,7 +105,7 @@ while tec.get_temp_stability_state() is not "stable":
     dmm.prepare_measure_one()
     time.sleep(0.5)
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     temp_xy = np.append(temp_xy, tec.get_object_temperature())
     vxy1, curr = pg.fetch_one()
@@ -139,7 +139,7 @@ while tic < end_wait_time:
     dmm.prepare_measure_one()
     time.sleep(0.5)
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     temp_xx = np.append(temp_xx, tec.get_object_temperature())
     vxx1, curr = pg.fetch_one()
@@ -155,7 +155,7 @@ while tic < end_wait_time:
     dmm.prepare_measure_one()
     time.sleep(0.5)
     t = time.time() - start_time
-    pg.trigger_fetch()
+    pg.trigger_before_fetch()
     dmm.trigger()
     temp_xy = np.append(temp_xy, tec.get_object_temperature())
     vxy1, curr = pg.fetch_one()

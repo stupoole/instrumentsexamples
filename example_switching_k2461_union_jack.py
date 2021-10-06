@@ -72,7 +72,7 @@ for i in range(num_loops):
     # print('Pulse current: ', pulse_current)  # just to show the set value.
     plt.pause(200e-3)
     switch_box.switch(measure_assignments)  # tells the switchbox to switch to a measurement assignment
-    pulse_generator.measure_n(measure_current, measure_number)  # tells the k2461 to prepare a vxx measurement
+    pulse_generator.prepare_measure_n(measure_current, measure_number)  # tells the k2461 to prepare a vxx measurement
     keithley.prepare_measure_n(measure_number)  # tells the k2000 to prepare a vxy measurement
     plt.pause(200e-3)
     keithley.trigger()  # actually starts measuring
@@ -100,7 +100,7 @@ for i in range(num_loops):
     pulse_generator.send_pulse(pulse_voltage, pulse_width)
     plt.pause(200e-3)
     switch_box.switch(measure_assignments)
-    pulse_generator.measure_n(measure_current, measure_number, 2)
+    pulse_generator.prepare_measure_n(measure_current, measure_number, 2)
     keithley.prepare_measure_n(measure_number, 0, 2)
     plt.pause(200e-3)
     keithley.trigger()
