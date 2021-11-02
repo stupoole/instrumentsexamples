@@ -1,5 +1,5 @@
 import time
-import Instruments
+import instruments
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -23,9 +23,9 @@ numpoints = 10
 RxxData = np.zeros(numpoints)
 RxyData = np.zeros(numpoints)
 TimeData = np.zeros(numpoints)
-pg = Instruments.K2400()
-dmm = Instruments.K2000()
-sb = Instruments.SwitchBox()
+pg = instruments.K2400()
+dmm = instruments.K2000()
+sb = instruments.SwitchBox()
 
 dmm.connect(6)
 pg.connect(9)

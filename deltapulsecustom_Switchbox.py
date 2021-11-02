@@ -1,4 +1,4 @@
-import Instruments
+import instruments
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,8 +50,8 @@ plot_styles = ['k.', 'k.', 'b+', 'b+', 'ro', 'ro', 'g*', 'g*']
 datasets = []
 header = ""
 
-source = Instruments.K6221()
-sb = Instruments.SwitchBox()
+source = instruments.K6221()
+sb = instruments.SwitchBox()
 sb.connect(12)
 
 source.connect_ethernet()
