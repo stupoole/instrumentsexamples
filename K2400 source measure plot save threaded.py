@@ -11,15 +11,7 @@ from tkinter import filedialog as dialog
 matplotlib.use('Qt5Agg')
 
 
-def save(data, header):
-    name = dialog.asksaveasfilename(title='Save data')
-    if name:  # if a name was entered, don't save otherwise
-        if name[-4:] != '.txt':  # add .txt if not already there
-            name = f'{name}.txt'
-        np.savetxt(name, data, header=header, newline='\r\n', delimiter='\t')  # save
-        print(f'Data saved as {name}')
-    else:
-        print('Data not saved')
+
 
 
 class Plotter:
@@ -85,7 +77,7 @@ class Plotter:
                 figure.canvas.flush_events()
         header = "Time (s), Voltage (V), Current (A), Resistance (Ohms)"
         data = np.column_stack((np.array(times), np.array(voltages), np.array(currents), np.array(resistances)))
-        save(data, header)
+        instruments.filehandler.save(data, header)
 
     def stop_button_callback(self, event):
         self._is_running = False
