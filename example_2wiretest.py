@@ -12,7 +12,7 @@ probe_current = 100e-6
 R = np.zeros(4)
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
-sb.connect(8)
+sb.connect(3)
 pg.connect()
 
 sb.switch(assignments_0)
@@ -52,12 +52,13 @@ pg.disable_probe_current()
 time.sleep(0.2)
 
 print('Resistances: \n', R)
-pg.disable_probe_current()
+pg.close()
+sb.close()
 name = dialog.asksaveasfilename(title='Save')
 if name:  # if a name was entered, don't save otherwise
     if name[-4:] != '.txt':  # add .txt if not already there
         name = f'{name}.txt'
-    np.savetxt(name, R, newline='\r\n', delimiter='\t')  # save
+    np.savetxt(name, R, newline='\n', delimiter='\t')  # save
     print(f'Data saved as {name}')
 else:
     print('Data not saved')
