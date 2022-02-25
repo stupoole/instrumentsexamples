@@ -44,12 +44,16 @@ neg_rxy = np.array([])
 switch_box = instruments.SwitchBox()  # make a sb object
 pulse_generator = instruments.K2461()  # make a k2461 object
 keithley = instruments.K2000()  # make a k2000 object
-start_time = time.time()  # use this for the graphing only
+tempcont = instruments.TEC1089SV()
+start_time = time.time()
+# use this for the graphing only
 
 # actually connect to the instruments
 pulse_generator.connect(timeout=320000)
 switch_box.connect(3)
 keithley.connect(6, timeout=320000)
+tempcont.connect(14)
+
 
 plt.figure(1)
 plt.xlabel('Time (s)')
@@ -64,7 +68,7 @@ for i in range(num_loops):
     #-------PULSE 1--------#
     pulse1_start_time = time.time()
     switch_box.switch(measure_assignments)
-    pulse_generator.measure_n(measure_current, 10, nplc=10)
+    pulse_generator.prepare_measure_n(measure_current, 10, nplc=10)
     keithley.prepare_measure_n(10, nplc=10)
     plt.pause(500e-3)
     prepulse1_time = time.time()
@@ -85,7 +89,7 @@ for i in range(num_loops):
     # print('Pulse current: ', pulse_current)  # just to show the set value.
     plt.pause(500e-3)
     switch_box.switch(measure_assignments)
-    pulse_generator.measure_n(measure_current, measure_number, nplc=10)
+    pulse_generator.prepare_measure_n(measure_current, measure_number, nplc=10)
     keithley.prepare_measure_n(measure_number, nplc=10)
     plt.pause(500e-3)
     keithley.trigger()  # actually starts measuring
