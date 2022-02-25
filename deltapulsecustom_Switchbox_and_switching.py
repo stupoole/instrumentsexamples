@@ -12,8 +12,10 @@ from tkinter import filedialog as dialog
 
 def ass_to_str(assignment):
     ass_string = str(assignment.values()).strip()
-    return ''.join(x for x in ass_string if x.isalpha())[-4:].upper()
-
+    string = ",".join(x for x in ass_string if x.isalpha()).replace('d,i,c,t,v,a,l,u,e,s,', '').upper()
+    if string.strip()=="":
+        string = ",".join(x for x in ass_string if x.isnumeric())
+    return string
 
 I_pulse = 35e-3  # step this one up in medium steps up to 20 then tiny steps up to 30 onwards
 probe_duration = 360  # number of seconds to measure for
