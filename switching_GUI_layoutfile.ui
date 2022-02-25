@@ -188,7 +188,7 @@
          <item row="1" column="1">
           <widget class="QLineEdit" name="dmm_port_box">
            <property name="text">
-            <string>16</string>
+            <string>6</string>
            </property>
           </widget>
          </item>
@@ -221,7 +221,7 @@
          <item row="2" column="1">
           <widget class="QLineEdit" name="sb_port_box">
            <property name="text">
-            <string>15</string>
+            <string>7</string>
            </property>
           </widget>
          </item>
@@ -298,6 +298,9 @@
          </item>
          <item row="5" column="1">
           <widget class="QCheckBox" name="scope_checkbox">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
            <property name="toolTip">
             <string>Do you have a rigol ds1104 scope connected across a shunt resistor?</string>
            </property>
@@ -305,7 +308,7 @@
             <string/>
            </property>
            <property name="checked">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="tristate">
             <bool>false</bool>

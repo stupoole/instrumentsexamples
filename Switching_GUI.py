@@ -1,12 +1,12 @@
-import time
-import numpy as np
-import matplotlib
-import winsound
-import instruments
-import matplotlib.pyplot as plt
 import sys
-import serial
+import time
+from tqdm import tqdm
+import instruments
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import pyvisa
+import serial
 from PyQt5 import QtCore, QtWidgets, uic
 
 # Todo: replace tkinter boxes with qt
@@ -55,9 +55,9 @@ class DataCollector(QtCore.QObject):
     # pulse2_assignments = {"I+": "H", "I-": "D"}  # configuration for a pulse from D to H
     # measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
     # default 4 arms
-    pulse1_assignments = {"I+": "AG", "I-": "CE"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "AC", "I-": "GE"}  # configuration for a pulse from D to H
-    measure_assignments = {"I+": "A", "I-": "E", "V1+": "A", "V1-": "E", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
+    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
 
 
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
@@ -205,7 +205,7 @@ class DataCollector(QtCore.QObject):
                 return
 
             a = self.tec.get_temp_stability_state()
-            while a is not "stable":
+            while a != "stable":
                 time.sleep(1)
                 a = self.tec.get_temp_stability_state()
             self.stable.emit()
@@ -239,7 +239,6 @@ class DataCollector(QtCore.QObject):
             if self.is_stopped:
                 return
             self.mutex.unlock()
-            print('Loop count:', loop_count + 1, 'Pulse: 1')
             self.sb.switch(self.pulse1_assignments)
             if self.scope_enabled:
                 self.scope.single_trig()
@@ -248,12 +247,12 @@ class DataCollector(QtCore.QObject):
             else:
                 self.pg.prepare_pulsing_current(pulse_mag, pulse_width)
             self.pg.set_ext_trig()
-            time.sleep(200e-3)
+            time.sleep(500e-3)
             pulse_t = time.time()
 
             self.pg.send_pulse()
 
-            time.sleep(200e-3)
+            time.sleep(500e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
@@ -263,7 +262,7 @@ class DataCollector(QtCore.QObject):
             curr = np.zeros(meas_n)
             if self.tec_enabled:
                 tec_data = np.zeros(meas_n)
-            for meas_count in range(meas_n):
+            for meas_count in tqdm(range(meas_n), desc=f"Loop {loop_count + 1}/{loop_n}, Pulse 1"):
                 t[meas_count] = time.time()
                 self.pg.trigger_before_fetch()
                 self.dmm.trigger()
@@ -286,7 +285,6 @@ class DataCollector(QtCore.QObject):
                 return
             self.mutex.unlock()
 
-            print('Loop count:', loop_count + 1, 'Pulse: 2')
             self.sb.switch(self.pulse2_assignments)
             if self.scope_enabled:
                 self.scope.single_trig()
@@ -295,12 +293,12 @@ class DataCollector(QtCore.QObject):
             else:
                 self.pg.prepare_pulsing_current(pulse_mag, pulse_width)
             self.pg.set_ext_trig()
-            time.sleep(200e-3)
+            time.sleep(500e-3)
             pulse_t = time.time()
 
             self.pg.send_pulse()
 
-            time.sleep(200e-3)
+            time.sleep(500e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
@@ -311,7 +309,7 @@ class DataCollector(QtCore.QObject):
             curr = np.zeros(meas_n)
             if self.tec_enabled:
                 tec_data = np.zeros(meas_n)
-            for meas_count in range(meas_n):
+            for meas_count in tqdm(range(meas_n), desc=f"Loop {loop_count + 1}/{loop_n}, Pulse 2"):
                 t[meas_count] = time.time()
                 self.pg.trigger_before_fetch()
                 self.dmm.trigger()
@@ -466,12 +464,12 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def connect_signals(self):
         # Connect gui elements to slots.
-        self.pulse_type_combobox.currentTextChanged.connect_ethernet(self.on_mode_changed)
-        self.start_button.clicked.connect_ethernet(self.on_start)
-        self.start_res_button.clicked.connect_ethernet(self.on_res_measurement)
-        self.stop_button.clicked.connect_ethernet(self.on_stop)
-        self.temperature_control_combo.currentIndexChanged.connect_ethernet(self.on_temp_control_changed)
-        self.temperature_control_button.clicked.connect_ethernet(self.on_temp_start_stop)
+        self.pulse_type_combobox.currentTextChanged.connect(self.on_mode_changed)
+        self.start_button.clicked.connect(self.on_start)
+        self.start_res_button.clicked.connect(self.on_res_measurement)
+        self.stop_button.clicked.connect(self.on_stop)
+        self.temperature_control_combo.currentIndexChanged.connect(self.on_temp_control_changed)
+        self.temperature_control_button.clicked.connect(self.on_temp_start_stop)
         self.thread = QtCore.QThread()
         self.data_collector = DataCollector()
         self.data_collector.moveToThread(self.thread)
