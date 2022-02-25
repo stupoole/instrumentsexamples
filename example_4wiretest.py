@@ -5,7 +5,7 @@ from tkinter import filedialog as dialog
 
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
-sb.connect(3)
+sb.connect(7)
 pg.connect()
 probe_current = 100e-6
 

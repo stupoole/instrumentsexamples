@@ -22,7 +22,7 @@ def save(name, save_data, header):
 
 frequency = 1
 
-I_max = 15e-3  # Used 15mA to RC124 10um, 10mA for RC123 10um UJ, 5mA for RC123 5um UJ
+I_max = 10e-3  # Used 15mA to RC124 10um, 10mA for RC123 10um UJ, 5mA for RC123 5um UJ
 step = 0.25e-3  # Used 0.1mA steps for 5um RC123 UJ otherwise 0.25mA
 delay = 1
 repeats = 20
@@ -52,7 +52,7 @@ header = ""
 
 source = instruments.K6221()
 sb = instruments.SwitchBox()
-sb.connect(12)
+sb.connect(3)
 
 source.connect_ethernet()
 source.set_compliance(compliance)

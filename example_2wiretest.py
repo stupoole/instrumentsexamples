@@ -12,7 +12,7 @@ probe_current = 100e-6
 R = np.zeros(4)
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
-sb.connect(3)
+sb.connect(7)
 pg.connect()
 
 sb.switch(assignments_0)
