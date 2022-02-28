@@ -542,7 +542,6 @@ class MyGUI(QtWidgets.QMainWindow):
         # Reset the data arrays to not append to previous measurements.
         self.switching_dataframe = pd.DataFrame()
         self.scope_dataframe = None
-        self.resistance_dataframe = None
         self.pos_time = np.array([])
         self.neg_time = np.array([])
         self.pos_rxx = np.array([])
@@ -697,15 +696,14 @@ class MyGUI(QtWidgets.QMainWindow):
             self.data_collector.is_stopped = True
             mutex.unlock()
         print("Stopping")
+        self.resistance_dataframe = None
 
     def on_loop_over(self):
         print("Finished Loop")
         # when finished is emitted, this will save the data (I hope).
         try:
             # alert_sound()
-
             prompt_window = QtWidgets.QWidget()
-
             if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
                                               'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
                                               QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
@@ -737,6 +735,7 @@ class MyGUI(QtWidgets.QMainWindow):
                   "(and scope data if used).")
         except:
             print("Data not saved, something went wrong! Please check the temp data files")
+        self.resistance_dataframe = None
 
     def on_pos_data_ready(self, dataframe):
         # After pos pulse, plot and store the data then save a backup
@@ -780,7 +779,6 @@ class MyGUI(QtWidgets.QMainWindow):
         self.refresh_switching_graphs()
         self.switching_dataframe = self.switching_dataframe.append(
             dataframe)
-
         name = 'temp_data.h5'
         store = pd.HDFStore(name)
         store['switching'] = self.switching_dataframe
@@ -878,25 +876,27 @@ class MyGUI(QtWidgets.QMainWindow):
 # Starts the application running it's callback loops etc.
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+
+    pulse1_assignments = {"I+": "B", "I-": "F"}
+    pulse2_assignments = {"I+": "D", "I-": "H"}
+
     measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
 
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
     two_wire_assignments = ({"I+": "A", "I-": "E"},
                             {"I+": "B", "I-": "F"},
                             {"I+": "C", "I-": "G"},
-                            {"I+": "D", "I-": "H"}
-                            )
-    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "C", "V1-": "G"},
-                             {"I+": "B", "I-": "F", "V1+": "D", "V1-": "H"},
-                             {"I+": "C", "I-": "G", "V1+": "E", "V1-": "A"},
-                             {"I+": "D", "I-": "H", "V1+": "F", "V1-": "B"},
-                             {"I+": "E", "I-": "A", "V1+": "G", "V1-": "C"},
-                             {"I+": "F", "I-": "B", "V1+": "H", "V1-": "D"},
-                             {"I+": "G", "I-": "C", "V1+": "A", "V1-": "E"},
-                             {"I+": "H", "I-": "D", "V1+": "B", "V1-": "F"}
-                             )
+                            {"I+": "D", "I-": "H"})
+
+    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"},
+                             {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"},
+                             {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"},
+                             {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"},
+                             {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"},
+                             {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"},
+                             {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
+                             {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"})
+
     assignments_dict = {"pulse1_assignments": pulse1_assignments, "pulse2_assignments": pulse2_assignments,
                         "measure_assignments": measure_assignments, "resistance_assignments": resistance_assignments,
                         "two_wire_assignments": two_wire_assignments, "four_wire_assignments": four_wire_assignments}
