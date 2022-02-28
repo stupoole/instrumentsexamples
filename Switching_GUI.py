@@ -47,35 +47,31 @@ class DataCollector(QtCore.QObject):
 
     scope_enabled = False
     tec_enabled = False
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
-
-    resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
-    two_wire_assignments = ({"I+": "A", "I-": "E"},
-                            {"I+": "B", "I-": "F"},
-                            {"I+": "C", "I-": "G"},
-                            {"I+": "D", "I-": "H"}
-                            )
-    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "C", "V1-": "G"},
-                             {"I+": "B", "I-": "F", "V1+": "D", "V1-": "H"},
-                             {"I+": "C", "I-": "G", "V1+": "E", "V1-": "A"},
-                             {"I+": "D", "I-": "H", "V1+": "F", "V1-": "B"}
-                             )
 
     # reference_resistance = 10.0154663186062
     reference_resistance = 50.036
     two_wire = 150
 
-    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
-    def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
-                          checkboxes):
-        bb_enabled, scope_enabled = checkboxes
+    @QtCore.pyqtSlot(dict)
+    def start_measurement(self, settings):
+        self.assignments = settings["assignments"]
+        mode = settings["pulse_type"]
+        sb_port = settings["sb_port"]
+        bb_port = settings["bb_port"]
+        dmm_port = settings["dmm_port"]
+        pulse_mag = settings["pulse_mag"]
+        pulse_width = settings["pulse_width"]
+        meas_curr = settings["probe_current"]
+        meas_n = settings["measurement_count"]
+        loop_n = settings["loop_count"]
+        bb_enabled = settings["bb_enabled"]
+        scope_enabled = settings["scope_enabled"]
+
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
 
-        error_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
+        error_flag, is_voltage_pulse, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
                                                                                                         sb_port,
                                                                                                         bb_port,
                                                                                                         dmm_port,
@@ -89,7 +85,7 @@ class DataCollector(QtCore.QObject):
         if error_flag:
             return
 
-        self.pulse_and_measure(pulse_volts, pulse_mag, pulse_width, meas_curr,
+        self.pulse_and_measure(is_voltage_pulse, pulse_mag, pulse_width, meas_curr,
                                meas_n, loop_n)
 
         self.sb.close()
@@ -101,6 +97,7 @@ class DataCollector(QtCore.QObject):
         self.pg.close()
         # plt.pause()(1)
         self.finished.emit()
+
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
     def resistance_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n,
@@ -129,11 +126,11 @@ class DataCollector(QtCore.QObject):
         if bb_enabled:
             self.bb.reset_resistances()
 
-        two_wires = np.zeros(len(self.two_wire_assignments))
-        four_wires = np.zeros(len(self.four_wire_assignments))
+        two_wires = np.zeros(len(self.assignments["two_wire_assignments"]))
+        four_wires = np.zeros(len(self.assignments["four_wire_assignments"]))
 
-        for i in range(len(self.two_wire_assignments)):
-            self.sb.switch(self.two_wire_assignments[i])
+        for i in range(len(self.assignments["two_wire_assignments"])):
+            self.sb.switch(self.assignments["two_wire_assignments"][i])
             time.sleep(0.3)
             self.pg.enable_2_wire_probe(meas_curr)
             time.sleep(0.2)
@@ -142,8 +139,8 @@ class DataCollector(QtCore.QObject):
             self.pg.disable_probe_current()
         print('Two Wires: ', two_wires)
 
-        for i in range(len(self.four_wire_assignments)):
-            self.sb.switch(self.four_wire_assignments[i])
+        for i in range(len(self.assignments["four_wire_assignments"])):
+            self.sb.switch(self.assignments["four_wire_assignments"][i])
             time.sleep(0.3)
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(0.2)
@@ -158,6 +155,7 @@ class DataCollector(QtCore.QObject):
         self.pg.close()
         self.sb.close()
         self.finished_res_measurement.emit(two_wires, four_wires)
+
 
     @QtCore.pyqtSlot(int, str, str)
     def start_TEC_temperature_control(self, system, port, target):
@@ -195,6 +193,7 @@ class DataCollector(QtCore.QObject):
         #         print('Could not connect to HTS on port ' + port + ' or could not set temperature to ' + target)
         #         return
 
+
     @QtCore.pyqtSlot()
     def stop_TEC_temperature_control(self):
         self.tec_enabled = False
@@ -203,6 +202,7 @@ class DataCollector(QtCore.QObject):
         except pyvisa.pyvisaIOError:
             print('Could not send disable output command to TEC')
         self.tec.close()
+
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         # see footnote on 6-110 in k2461 manual
@@ -215,7 +215,7 @@ class DataCollector(QtCore.QObject):
             if self.is_stopped:
                 return
             self.mutex.unlock()
-            self.sb.switch(self.pulse1_assignments)
+            self.sb.switch(self.assignments["pulse1_assignments"])
             if self.scope_enabled:
                 self.scope.single_trig()
             if volts:
@@ -229,7 +229,7 @@ class DataCollector(QtCore.QObject):
             self.pg.send_pulse()
 
             time.sleep(500e-3)
-            self.sb.switch(self.measure_assignments)
+            self.sb.switch(self.assignments["measure_assignments"])
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
             t = np.zeros(meas_n)
@@ -255,14 +255,14 @@ class DataCollector(QtCore.QObject):
 
                 self.pos_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
             if self.tec_enabled:
-                self.pos_tec_data_ready.emit(t-start_time, tec_data)
+                self.pos_tec_data_ready.emit(t - start_time, tec_data)
 
             self.mutex.lock()
             if self.is_stopped:
                 return
             self.mutex.unlock()
 
-            self.sb.switch(self.pulse2_assignments)
+            self.sb.switch(self.assignments["pulse2_assignments"])
             if self.scope_enabled:
                 self.scope.single_trig()
             if volts:
@@ -276,7 +276,7 @@ class DataCollector(QtCore.QObject):
             self.pg.send_pulse()
 
             time.sleep(500e-3)
-            self.sb.switch(self.measure_assignments)
+            self.sb.switch(self.assignments["measure_assignments"])
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
 
@@ -303,7 +303,8 @@ class DataCollector(QtCore.QObject):
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
                 self.neg_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
             if self.tec_enabled:
-                self.neg_tec_data_ready.emit(t-start_time, tec_data)
+                self.neg_tec_data_ready.emit(t - start_time, tec_data)
+
 
     def handle_inputs(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
                       bb_enabled, scope_enabled):
@@ -334,7 +335,7 @@ class DataCollector(QtCore.QObject):
                 print('Invalid balance box port please enter integer value.')
                 conversion_flag = True
             self.bb.enable_all()
-            self.bb.set_resistances(self.resistance_assignments)
+            self.bb.set_resistances(self.assignments["resistance_assignments"])
 
         try:
             dmm_port = int(dmm_port)
@@ -433,6 +434,35 @@ class DataCollector(QtCore.QObject):
 class MyGUI(QtWidgets.QMainWindow):
     def __init__(self, assignments):
         super(MyGUI, self).__init__()  # Call the inherited classes __init__ method
+        self.thread = None
+        self.data_collector = None
+        self.pos_tec_time = None
+        self.switching_dataframe = None
+        self.pos_time = None
+        self.neg_time = None
+        self.pos_rxx = None
+        self.neg_rxx = None
+        self.pos_rxy = None
+        self.neg_rxy = None
+        self.scope_enabled = True
+        self.pos_scope_time = None
+        self.pos_scope_data = None
+        self.neg_scope_time = None
+        self.neg_scope_data = None
+        self.scope_dataframe = None
+        self.pos_tec_time = None
+        self.pos_tec_data = None
+        self.neg_tec_time = None
+        self.neg_tec_data = None
+        self.temperature_dataframe = None
+        self.meta_df = None
+        self.rxy_neg_line = None
+        self.rxy_pos_line = None
+        self.rxy_ax = None
+        self.rxx_neg_line = None
+        self.rxx_pos_line = None
+        self.rxx_ax = None
+        self.graph_fig = None
         uic.loadUi('switching_GUI_layoutfile.ui', self)  # Load the .ui file
         self.show()  # Show the GUI
         self.connect_signals()  # this also creates a new thread.
@@ -468,8 +498,6 @@ class MyGUI(QtWidgets.QMainWindow):
         self.tc_port_label.setDisabled(True)
 
     def on_start(self):
-
-
         # Reset the data arrays to not append to previous measurements.
         self.switching_dataframe = pd.DataFrame()
         self.pos_time = np.array([])
