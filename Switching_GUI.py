@@ -24,12 +24,10 @@ def assignment_to_str(assignment):
 
 class DataCollector(QtCore.QObject):
     finished = QtCore.pyqtSignal()
-    pos_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
-    pos_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
-    pos_tec_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
-    neg_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
-    neg_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
-    neg_tec_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    pos_data_ready = QtCore.pyqtSignal(pd.DataFrame)
+    pos_scope_data_ready = QtCore.pyqtSignal(pd.DataFrame)
+    neg_data_ready = QtCore.pyqtSignal(pd.DataFrame)
+    neg_scope_data_ready = QtCore.pyqtSignal(pd.DataFrame)
     finished_res_measurement = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     stable = QtCore.pyqtSignal()
 
@@ -47,49 +45,46 @@ class DataCollector(QtCore.QObject):
 
     scope_enabled = False
     tec_enabled = False
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
-
-    resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
-    two_wire_assignments = ({"I+": "A", "I-": "E"},
-                            {"I+": "B", "I-": "F"},
-                            {"I+": "C", "I-": "G"},
-                            {"I+": "D", "I-": "H"}
-                            )
-    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "C", "V1-": "G"},
-                             {"I+": "B", "I-": "F", "V1+": "D", "V1-": "H"},
-                             {"I+": "C", "I-": "G", "V1+": "E", "V1-": "A"},
-                             {"I+": "D", "I-": "H", "V1+": "F", "V1-": "B"}
-                             )
 
     # reference_resistance = 10.0154663186062
     reference_resistance = 50.036
     two_wire = 150
 
-    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
-    def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
-                          checkboxes):
-        bb_enabled, scope_enabled = checkboxes
+    @QtCore.pyqtSlot(dict)
+    def start_measurement(self, settings):
+        self.assignments = settings["assignments"]
+        mode = settings["pulse_type"]
+        sb_port = settings["sb_port"]
+        bb_port = settings["bb_port"]
+        dmm_port = settings["dmm_port"]
+        pulse_mag = settings["pulse_mag"]
+        pulse_width = settings["pulse_width"]
+        meas_curr = settings["probe_current"]
+        meas_n = settings["measurement_count"]
+        loop_n = settings["loop_count"]
+        bb_enabled = settings["bb_enabled"]
+        scope_enabled = settings["scope_enabled"]
+
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
 
-        error_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
-                                                                                                        sb_port,
-                                                                                                        bb_port,
-                                                                                                        dmm_port,
-                                                                                                        pulse_mag,
-                                                                                                        pulse_width,
-                                                                                                        meas_curr,
-                                                                                                        meas_n, loop_n,
-                                                                                                        bb_enabled,
-                                                                                                        scope_enabled)
+        error_flag, is_voltage_pulse, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
+                                                                                                             sb_port,
+                                                                                                             bb_port,
+                                                                                                             dmm_port,
+                                                                                                             pulse_mag,
+                                                                                                             pulse_width,
+                                                                                                             meas_curr,
+                                                                                                             meas_n,
+                                                                                                             loop_n,
+                                                                                                             bb_enabled,
+                                                                                                             scope_enabled)
         # If flag is true then something failed in parsing the inputs or connecting and the loop will not continue.
         if error_flag:
             return
 
-        self.pulse_and_measure(pulse_volts, pulse_mag, pulse_width, meas_curr,
+        self.pulse_and_measure(is_voltage_pulse, pulse_mag, pulse_width, meas_curr,
                                meas_n, loop_n)
 
         self.sb.close()
@@ -102,9 +97,21 @@ class DataCollector(QtCore.QObject):
         # plt.pause()(1)
         self.finished.emit()
 
-    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
-    def resistance_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n,
-                               loop_n, bb_enabled):
+    @QtCore.pyqtSlot(dict)
+    def resistance_measurement(self, settings):
+        self.assignments = settings["assignments"]
+        mode = settings["pulse_type"]
+        sb_port = settings["sb_port"]
+        bb_port = settings["bb_port"]
+        dmm_port = settings["dmm_port"]
+        pulse_mag = settings["pulse_mag"]
+        pulse_width = settings["pulse_width"]
+        meas_curr = settings["probe_current"]
+        meas_n = settings["measurement_count"]
+        loop_n = settings["loop_count"]
+        bb_enabled = settings["bb_enabled"]
+        scope_enabled = settings["scope_enabled"]
+
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
@@ -129,11 +136,11 @@ class DataCollector(QtCore.QObject):
         if bb_enabled:
             self.bb.reset_resistances()
 
-        two_wires = np.zeros(len(self.two_wire_assignments))
-        four_wires = np.zeros(len(self.four_wire_assignments))
+        two_wires = np.zeros(len(self.assignments["two_wire_assignments"]))
+        four_wires = np.zeros(len(self.assignments["four_wire_assignments"]))
 
-        for i in range(len(self.two_wire_assignments)):
-            self.sb.switch(self.two_wire_assignments[i])
+        for i in range(len(self.assignments["two_wire_assignments"])):
+            self.sb.switch(self.assignments["two_wire_assignments"][i])
             time.sleep(0.3)
             self.pg.enable_2_wire_probe(meas_curr)
             time.sleep(0.2)
@@ -142,8 +149,8 @@ class DataCollector(QtCore.QObject):
             self.pg.disable_probe_current()
         print('Two Wires: ', two_wires)
 
-        for i in range(len(self.four_wire_assignments)):
-            self.sb.switch(self.four_wire_assignments[i])
+        for i in range(len(self.assignments["four_wire_assignments"])):
+            self.sb.switch(self.assignments["four_wire_assignments"][i])
             time.sleep(0.3)
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(0.2)
@@ -215,7 +222,7 @@ class DataCollector(QtCore.QObject):
             if self.is_stopped:
                 return
             self.mutex.unlock()
-            self.sb.switch(self.pulse1_assignments)
+            self.sb.switch(self.assignments["pulse1_assignments"])
             if self.scope_enabled:
                 self.scope.single_trig()
             if volts:
@@ -229,7 +236,7 @@ class DataCollector(QtCore.QObject):
             self.pg.send_pulse()
 
             time.sleep(500e-3)
-            self.sb.switch(self.measure_assignments)
+            self.sb.switch(self.assignments["measure_assignments"])
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
             t = np.zeros(meas_n)
@@ -247,22 +254,39 @@ class DataCollector(QtCore.QObject):
                 if self.tec_enabled:
                     tec_data[meas_count] = self.tec.get_object_temperature()
             self.pg.disable_probe_current()
-            self.pos_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
+
+            if self.tec_enabled:
+                pos_data = pd.DataFrame({"pulse_number": loop_count,
+                                         "meas_index": list(range(0, meas_n)),
+                                         'pulse_direction': assignment_to_str(self.assignments["pulse1_assignments"]),
+                                         "time": t - start_time,
+                                         'rxx': vxx / curr,
+                                         'rxy': vxy / curr,
+                                         "temperature": tec_data
+                                         })
+            else:
+                pos_data = pd.DataFrame({"pulse_number": loop_count,
+                                         "meas_index": list(range(0, meas_n)),
+                                         'pulse_direction': assignment_to_str(self.assignments["pulse1_assignments"]),
+                                         "time": t - start_time,
+                                         'rxx': vxx / curr,
+                                         'rxy': vxy / curr
+                                         })
+            self.pos_data_ready.emit(pos_data)
+
             if self.scope_enabled:
                 scope_data = self.scope.get_data(30001, 60000)
                 time_step = float(self.scope.get_time_inc())
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
 
                 self.pos_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
-            if self.tec_enabled:
-                self.pos_tec_data_ready.emit(t-start_time, tec_data)
 
             self.mutex.lock()
             if self.is_stopped:
                 return
             self.mutex.unlock()
 
-            self.sb.switch(self.pulse2_assignments)
+            self.sb.switch(self.assignments["pulse2_assignments"])
             if self.scope_enabled:
                 self.scope.single_trig()
             if volts:
@@ -276,7 +300,7 @@ class DataCollector(QtCore.QObject):
             self.pg.send_pulse()
 
             time.sleep(500e-3)
-            self.sb.switch(self.measure_assignments)
+            self.sb.switch(self.assignments["measure_assignments"])
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
 
@@ -295,15 +319,34 @@ class DataCollector(QtCore.QObject):
                 if self.tec_enabled:
                     tec_data[meas_count] = self.tec.get_object_temperature()
             self.pg.disable_probe_current()
-            self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
+
+            if self.tec_enabled:
+                neg_data = pd.DataFrame({"pulse_number": loop_count,
+                                         "meas_index": list(range(0, meas_n)),
+                                         'pulse_direction': assignment_to_str(self.assignments["pulse2_assignments"]),
+                                         'probe_direction': assignment_to_str(self.assignments["measure_assignments"]),
+                                         "time": t - start_time,
+                                         'rxx': vxx / curr,
+                                         'rxy': vxy / curr,
+                                         "temperature": tec_data
+                                         })
+            else:
+                neg_data = pd.DataFrame({"pulse_number": loop_count,
+                                         "meas_index": list(range(0, meas_n)),
+                                         'pulse_direction': assignment_to_str(self.assignments["pulse2_assignments"]),
+                                         'probe_direction': assignment_to_str(self.assignments["measure_assignments"]),
+                                         "time": t - start_time,
+                                         'rxx': vxx / curr,
+                                         'rxy': vxy / curr
+                                         })
+            self.neg_data_ready.emit(neg_data)
 
             if self.scope_enabled:
                 scope_data = self.scope.get_data(30001, 60000)
                 time_step = float(self.scope.get_time_inc())
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
                 self.neg_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
-            if self.tec_enabled:
-                self.neg_tec_data_ready.emit(t-start_time, tec_data)
+
 
     def handle_inputs(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
                       bb_enabled, scope_enabled):
@@ -334,7 +377,7 @@ class DataCollector(QtCore.QObject):
                 print('Invalid balance box port please enter integer value.')
                 conversion_flag = True
             self.bb.enable_all()
-            self.bb.set_resistances(self.resistance_assignments)
+            self.bb.set_resistances(self.assignments["resistance_assignments"])
 
         try:
             dmm_port = int(dmm_port)
@@ -433,6 +476,34 @@ class DataCollector(QtCore.QObject):
 class MyGUI(QtWidgets.QMainWindow):
     def __init__(self, assignments):
         super(MyGUI, self).__init__()  # Call the inherited classes __init__ method
+        self.thread = None
+        self.data_collector = None
+        self.pos_tec_time = None
+        self.switching_dataframe = None
+        self.pos_time = None
+        self.neg_time = None
+        self.pos_rxx = None
+        self.neg_rxx = None
+        self.pos_rxy = None
+        self.neg_rxy = None
+        self.scope_enabled = True
+        self.pos_scope_time = None
+        self.pos_scope_data = None
+        self.neg_scope_time = None
+        self.neg_scope_data = None
+        self.scope_dataframe = None
+        self.pos_tec_time = None
+        self.pos_tec_data = None
+        self.neg_tec_time = None
+        self.neg_tec_data = None
+        self.meta_df = None
+        self.rxy_neg_line = None
+        self.rxy_pos_line = None
+        self.rxy_ax = None
+        self.rxx_neg_line = None
+        self.rxx_pos_line = None
+        self.rxx_ax = None
+        self.graph_fig = None
         uic.loadUi('switching_GUI_layoutfile.ui', self)  # Load the .ui file
         self.show()  # Show the GUI
         self.connect_signals()  # this also creates a new thread.
@@ -468,10 +539,9 @@ class MyGUI(QtWidgets.QMainWindow):
         self.tc_port_label.setDisabled(True)
 
     def on_start(self):
-
-
         # Reset the data arrays to not append to previous measurements.
         self.switching_dataframe = pd.DataFrame()
+        self.scope_dataframe = None
         self.pos_time = np.array([])
         self.neg_time = np.array([])
         self.pos_rxx = np.array([])
@@ -493,21 +563,9 @@ class MyGUI(QtWidgets.QMainWindow):
             self.pos_tec_data = np.array([])
             self.neg_tec_time = np.array([])
             self.neg_tec_data = np.array([])
-            self.temperature_dataframe = pd.DataFrame()
 
         self.create_plots()  # make figure axes and so on
-        settings_dict = {"assignments": self.assignments,
-                         "pulse_type": self.pulse_type_combobox.currentText(),
-                         "sb_port": self.sb_port_box.text(),
-                         "bb_port": self.bb_port_box.text(),
-                         "dmm_port": self.dmm_port_box.text(),
-                         "pulse_mag": self.pulse_magnitude_box.text(),
-                         "pulse_width": self.pulse_width_box.text(),
-                         "probe_current": self.probe_current_box.text(),
-                         "measurement_count": self.measurement_count_box.text(),
-                         "loop_count": self.loop_count_box.text(),
-                         "bb_enabled": self.bb_enable_checkbox.isChecked(),
-                         "scope_enabled": self.scope_checkbox.isChecked()}
+        settings_dict = self.get_settings()
 
         self.meta_df = pd.DataFrame({"pulse_type": settings_dict["pulse_type"],
                                      "pulse_mag": settings_dict["pulse_mag"],
@@ -545,20 +603,22 @@ class MyGUI(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.data_collector, 'start_measurement', QtCore.Qt.QueuedConnection,
                                         QtCore.Q_ARG(dict, settings_dict))
 
-        def on_res_measurement(self):
+    def on_res_measurement(self):
+        QtCore.QMetaObject.invokeMethod(self.data_collector, 'resistance_measurement', QtCore.Qt.QueuedConnection,
+                                        QtCore.Q_ARG(dict, self.get_settings()))
 
-            QtCore.QMetaObject.invokeMethod(self.data_collector, 'resistance_measurement', QtCore.Qt.QueuedConnection,
-                                            QtCore.Q_ARG(str, self.pulse_type_combobox.currentText()),
-                                            QtCore.Q_ARG(str, self.sb_port_box.text()),
-                                            QtCore.Q_ARG(str, self.bb_port_box.text()),
-                                            QtCore.Q_ARG(str, self.dmm_port_box.text()),
-                                            QtCore.Q_ARG(str, self.pulse_magnitude_box.text()),
-                                            QtCore.Q_ARG(str, self.pulse_width_box.text()),
-                                            QtCore.Q_ARG(str, self.probe_current_box.text()),
-                                            QtCore.Q_ARG(str, self.measurement_count_box.text()),
-                                            QtCore.Q_ARG(str, self.loop_count_box.text()),
-                                            QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked())
-                                            )
+    def get_settings(self):
+        return {"assignments": self.assignments,
+                "pulse_type": self.pulse_type_combobox.currentText(),
+                "sb_port": self.sb_port_box.text(),
+                "bb_port": self.bb_port_box.text(),
+                "dmm_port": self.dmm_port_box.text(),
+                "pulse_mag": self.pulse_magnitude_box.text(),
+                "pulse_width": self.pulse_width_box.text(),
+                "probe_current": self.probe_current_box.text(),
+                "measurement_count": self.measurement_count_box.text(),
+                "loop_count": self.loop_count_box.text(),
+                "bb_enabled": self.bb_enable_checkbox.isChecked()}
 
     def create_plots(self):
         # creates plots and axes objects to be used to plot data.
@@ -636,15 +696,14 @@ class MyGUI(QtWidgets.QMainWindow):
             self.data_collector.is_stopped = True
             mutex.unlock()
         print("Stopping")
+        self.resistance_dataframe = None
 
     def on_loop_over(self):
         print("Finished Loop")
         # when finished is emitted, this will save the data (I hope).
         try:
             # alert_sound()
-
             prompt_window = QtWidgets.QWidget()
-
             if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
                                               'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
                                               QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
@@ -652,19 +711,19 @@ class MyGUI(QtWidgets.QMainWindow):
                 name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Data", "",
                                                                 "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
                 if name:  # if a name was entered, don't save otherwise
-                    name = name.replace('_scope', '')
-                    name = name.replace('_tec', '')
                     name = name.replace('.txt', '')
                     name = name.replace('.hdf', '')
+                    name = name.replace('.hd5', '')
                     name = name.replace('.h5', '')
                     name += '.h5'
                     store = pd.HDFStore(name)
                     store['meta_data'] = self.meta_df
                     store['switching'] = self.switching_dataframe
-                    if self.scope_dataframe:
+                    # Only add other pages if that data was collected.
+                    if self.scope_dataframe is not None:
                         store['scope'] = self.scope_dataframe
-                    if self.temperature_dataframe:
-                        store['temperature'] = self.temperature_dataframe
+                    if self.resistance_dataframe is not None:
+                        store['resistances'] = self.resistance_dataframe
                     print(f'Data saved as {name}')
                     store.close()  # save
                 else:
@@ -676,23 +735,24 @@ class MyGUI(QtWidgets.QMainWindow):
                   "(and scope data if used).")
         except:
             print("Data not saved, something went wrong! Please check the temp data files")
+        self.resistance_dataframe = None
 
-    def on_pos_data_ready(self, t, rxx, rxy):
+    def on_pos_data_ready(self, dataframe):
         # After pos pulse, plot and store the data then save a backup
-        self.pos_time = np.append(self.pos_time, t)
-        self.pos_rxx = np.append(self.pos_rxx, rxx)
-        self.pos_rxy = np.append(self.pos_rxy, rxy)
+        self.pos_time = np.append(self.pos_time, dataframe.time)
+        self.pos_rxx = np.append(self.pos_rxx, dataframe.rxx)
+        self.pos_rxy = np.append(self.pos_rxy, dataframe.rxy)
         self.rxx_pos_line.set_data(self.pos_time, self.pos_rxx)
         self.rxy_pos_line.set_data(self.pos_time, self.pos_rxy)
         self.refresh_switching_graphs()
         # append the new data to the DF
         self.switching_dataframe = self.switching_dataframe.append(
-            pd.DataFrame({'data type': "switching data", 't+': t, 'rxx+': rxx, 'rxy+': rxy}))
+            dataframe)
 
         name = 'temp_data.h5'
         store = pd.HDFStore(name)
         store['switching'] = self.switching_dataframe
-        print(f'Data saved as {name}')
+        print(f'temp data saved as {name}')
         store.close()  # save
 
     def on_pos_scope_data_ready(self, t, current):
@@ -706,37 +766,23 @@ class MyGUI(QtWidgets.QMainWindow):
         name = 'temp_data.h5'
         store = pd.HDFStore(name)
         store['scope'] = self.scope_dataframe
-        print(f'Data saved as {name}')
+        print(f'temp data saved as {name}')
         store.close()  # save
 
-    def on_pos_tec_data_ready(self, t, temperature):
-        self.pos_tec_time = np.append(self.pos_tec_time, t)
-        self.pos_tec_data = np.append(self.pos_tec_data, temperature)
-        self.pos_tec_line.set_data(self.pos_tec_time, self.pos_tec_data)
-        self.refresh_tec_graphs()
-        self.temperature_dataframe = self.temperature_dataframe.append(
-            pd.DataFrame({'t+': t, 'temperature+': temperature}))
-        name = 'temp_data.h5'
-        store = pd.HDFStore(name)
-        store['temperature'] = self.temperature_dataframe
-        print(f'Data saved as {name}')
-        store.close()
-
-    def on_neg_data_ready(self, t, rxx, rxy):
+    def on_neg_data_ready(self, dataframe):
         # After neg pulse, plot and store the data then save a backup
-        self.neg_time = np.append(self.neg_time, t)
-        self.neg_rxx = np.append(self.neg_rxx, rxx)
-        self.neg_rxy = np.append(self.neg_rxy, rxy)
+        self.neg_time = np.append(self.neg_time, dataframe.t)
+        self.neg_rxx = np.append(self.neg_rxx, dataframe.rxx)
+        self.neg_rxy = np.append(self.neg_rxy, dataframe.rxy)
         self.rxx_neg_line.set_data(self.neg_time, self.neg_rxx)
         self.rxy_neg_line.set_data(self.neg_time, self.neg_rxy)
         self.refresh_switching_graphs()
         self.switching_dataframe = self.switching_dataframe.append(
-            pd.DataFrame({'data type': "switching data", 't-': t, 'rxx-': rxx, 'rxy-': rxy}))
-
+            dataframe)
         name = 'temp_data.h5'
         store = pd.HDFStore(name)
         store['switching'] = self.switching_dataframe
-        print(f'Data saved as {name}')
+        print(f'temp data saved as {name}')
         store.close()  # save
 
     def on_neg_scope_data_ready(self, t, current):
@@ -749,39 +795,25 @@ class MyGUI(QtWidgets.QMainWindow):
         name = 'temp_data.h5'
         store = pd.HDFStore(name)
         store['scope_data'] = self.scope_dataframe
-        print(f'Data saved as {name}')
+        print(f'temp data saved as {name}')
         store.close()  # save
 
-    def on_neg_tec_data_ready(self, t, temperature):
-        self.neg_tec_time = np.append(self.neg_tec_time, t)
-        self.neg_tec_data = np.append(self.neg_tec_data, temperature)
-        self.neg_tec_line.set_data(self.neg_tec_time, self.neg_tec_data)
-        self.refresh_tec_graphs()
-        self.temperature_dataframe = self.temperature_dataframe.append(
-            pd.DataFrame({'t-': t, 'temperature-': temperature}))
-        name = 'temp_data.h5'
-        store = pd.HDFStore(name)
-        store['temperature'] = self.temperature_dataframe
-        print(f'Data saved as {name}')
-        store.close()
 
     def on_res_finished(self, two_wires, four_wires):
-        save_window = QtWidgets.QWidget()
-        name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Resistance Data", "",
-                                                        "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
-        if name:  # if a name was entered, don't save otherwise
-            name = name.replace('_2wires', '')
-            name = name.replace('_4wires', '')
 
-            name_two_wires = name.replace('.txt', '_2wires.txt')
-            np.savetxt(name_two_wires, two_wires, newline='\n', delimiter='\t')  # save
-            print(f'Two wires data saved as {name_two_wires}')
+        four_wire_df = pd.DataFrame({"type": "four_wires", "resistances": four_wires,
+                                     "assignments": [assignment_to_str(x) for x in
+                                                     self.assignments['four_wire_assignments']]})
+        two_wire_df = pd.DataFrame({"type": "two_wires", "resistances": two_wires,
+                                    "assignments": [assignment_to_str(x) for x in
+                                                    self.assignments['two_wire_assignments']]})
+        self.resistance_dataframe = pd.DataFrame().append(four_wire_df).append(two_wire_df)
 
-            name_four_wires = name.replace('.txt', '_4wires.txt')
-            np.savetxt(name_four_wires, four_wires, newline='\n', delimiter='\t')  # save
-            print(f'Four wires data saved as {name_four_wires}')
-        else:
-            print('No Filename: Data not saved')
+        name = 'temp_data.h5'
+        store = pd.HDFStore(name)
+        store['resistances'] = self.resistance_dataframe
+        print(f'temp data saved as {name}')
+        store.close()
 
     def on_temp_control_changed(self, mode):
         if mode == 0:
@@ -844,24 +876,30 @@ class MyGUI(QtWidgets.QMainWindow):
 # Starts the application running it's callback loops etc.
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+
+    pulse1_assignments = {"I+": "B", "I-": "F"}
+    pulse2_assignments = {"I+": "D", "I-": "H"}
+
     measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
 
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
     two_wire_assignments = ({"I+": "A", "I-": "E"},
                             {"I+": "B", "I-": "F"},
                             {"I+": "C", "I-": "G"},
-                            {"I+": "D", "I-": "H"}
-                            )
-    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "C", "V1-": "G"},
-                             {"I+": "B", "I-": "F", "V1+": "D", "V1-": "H"},
-                             {"I+": "C", "I-": "G", "V1+": "E", "V1-": "A"},
-                             {"I+": "D", "I-": "H", "V1+": "F", "V1-": "B"}
-                             )
-    assignments = {"pulse1_assignments": pulse1_assignments, "pulse2_assignments": pulse2_assignments,
-                   "measure_assignments": measure_assignments, "resistance_assignments": resistance_assignments,
-                   "two_wire_assignments": two_wire_assignments, "four_wire_assignments": four_wire_assignments}
-    window = MyGUI(assignments)
+                            {"I+": "D", "I-": "H"})
+
+    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"},
+                             {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"},
+                             {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"},
+                             {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"},
+                             {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"},
+                             {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"},
+                             {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
+                             {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"})
+
+    assignments_dict = {"pulse1_assignments": pulse1_assignments, "pulse2_assignments": pulse2_assignments,
+                        "measure_assignments": measure_assignments, "resistance_assignments": resistance_assignments,
+                        "two_wire_assignments": two_wire_assignments, "four_wire_assignments": four_wire_assignments}
+    window = MyGUI(assignments_dict)
     window.resize(0, 0)
     app.exec_()
