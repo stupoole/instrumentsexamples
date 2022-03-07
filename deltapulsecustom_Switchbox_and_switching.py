@@ -182,6 +182,7 @@ name = dialog.asksaveasfilename(title='Save')
 name = name.replace('.txt', '')
 name = name.replace('.hdf', '')
 name = name.replace('.h5', '')
+name = name.replace('.hd5', '')
 name += '.h5'
 if name:  # if a name was entered, don't save otherwise
     store = pd.HDFStore(name)
