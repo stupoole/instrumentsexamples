@@ -21,38 +21,22 @@ def ass_to_str(assignment):
 frequency = 1
 
 I_max = 15e-3  # Used 15mA to RC124 10um, 10mA for RC123 10um UJ, 5mA for RC123 5um UJ
-step = 1e-3  # Used 0.1mA steps for 5um RC123 UJ otherwise 0.25mA
-delay = 1
-repeats = 10
+step = 0.25e-3  # Used 0.1mA steps for 5um RC123 UJ otherwise 0.25mA
+delay = 1e-3
+repeats = 100
 channel = 1
-volt_range = 1000e-3  # 10 for Rxx # 100e-3 for Rxy sweep 1, is probably ignored
+volt_range = 100e-3  # 10 for Rxx # 100e-3 for Rxy sweep 1, is probably ignored
 width = 500e-6
 compliance = 40
 bias = 0.0
 polling_time = 10
 temperature = 21  # Just for meta_data
 field = 0  # Just for meta_data
+
 curr_list = np.concatenate((np.linspace(0, I_max, round(I_max / step) + 1),
                             np.linspace(I_max - step, -I_max, round(2 * I_max / step)),
                             np.linspace(-I_max + step, 0, round(I_max / step))))
 curr_vals = np.tile(curr_list, repeats)
-#
-# assignments = [{"I+": "A", "I-": "E", "V2+": "C", "V2-": "G"},
-#                {"I+": "E", "I-": "A", "V2+": "C", "V2-": "G"},
-#                {"I+": "B", "I-": "F", "V2+": "D", "V2-": "H"},
-#                {"I+": "F", "I-": "B", "V2+": "D", "V2-": "H"},
-#                {"I+": "C", "I-": "G", "V2+": "E", "V2-": "A"},
-#                {"I+": "G", "I-": "C", "V2+": "E", "V2-": "A"},
-#                {"I+": "D", "I-": "H", "V2+": "F", "V2-": "B"},
-#                {"I+": "H", "I-": "D", "V2+": "F", "V2-": "B"}]
-assignments = [{"I+": "A", "I-": "E", "V2+": "B", "V2-": "D"},
-               {"I+": "E", "I-": "A", "V2+": "B", "V2-": "D"},
-               {"I+": "B", "I-": "F", "V2+": "C", "V2-": "E"},
-               {"I+": "F", "I-": "B", "V2+": "C", "V2-": "E"},
-               {"I+": "C", "I-": "G", "V2+": "D", "V2-": "F"},
-               {"I+": "G", "I-": "C", "V2+": "D", "V2-": "F"},
-               {"I+": "D", "I-": "H", "V2+": "E", "V2-": "G"},
-               {"I+": "H", "I-": "D", "V2+": "E", "V2-": "G"}]
 
 assignments = [{"I+": "A", "I-": "E", "V2+": "C", "V2-": "G"},
                {"I+": "E", "I-": "A", "V2+": "C", "V2-": "G"},
@@ -62,6 +46,16 @@ assignments = [{"I+": "A", "I-": "E", "V2+": "C", "V2-": "G"},
                {"I+": "G", "I-": "C", "V2+": "E", "V2-": "A"},
                {"I+": "D", "I-": "H", "V2+": "F", "V2-": "B"},
                {"I+": "H", "I-": "D", "V2+": "F", "V2-": "B"}]
+# assignments = [{"I+": "A", "I-": "E", "V2+": "B", "V2-": "D"},
+#                {"I+": "E", "I-": "A", "V2+": "B", "V2-": "D"},
+#                {"I+": "B", "I-": "F", "V2+": "C", "V2-": "E"},
+#                {"I+": "F", "I-": "B", "V2+": "C", "V2-": "E"},
+#                {"I+": "C", "I-": "G", "V2+": "D", "V2-": "F"},
+#                {"I+": "G", "I-": "C", "V2+": "D", "V2-": "F"},
+#                {"I+": "D", "I-": "H", "V2+": "E", "V2-": "G"},
+#                {"I+": "H", "I-": "D", "V2+": "E", "V2-": "G"}]
+
+
 
 plot_styles = ['k.', 'k.', 'b+', 'b+', 'ro', 'ro', 'g*', 'g*']
 
@@ -69,19 +63,20 @@ final_dataframe = pd.DataFrame()
 
 source = instruments.K6221()
 sb = instruments.SwitchBox()
-sb.connect(18)
+sb.connect(4)
 source.connect_ethernet()
 
 absolute_reference_time = time.time()
-
+time.sleep(1)
 source.set_compliance(compliance)
-time.sleep(0.2)
-source.set_sense_chan_and_range(channel, volt_range)
-time.sleep(0.2)
-source.configure_custom_sweep(curr_list, delay, compliance, repeats, bias, 'best')
-time.sleep(0.2)
+time.sleep(1)
+source.set_compliance(compliance)
+time.sleep(1)
+# source.configure_custom_sweep(curr_list, delay, compliance, repeats, bias, 'best')
+source.configure_custom_sweep(curr_list, delay, compliance, repeats, bias, 'FIX')
+time.sleep(1)
 source.configure_pulse(width, 1, 1)
-time.sleep(5)
+time.sleep(1)
 for i, assignment in enumerate(assignments):
     print(f'Switching to {assignment}')
     sb.switch(assignment)
@@ -115,6 +110,12 @@ for i, assignment in enumerate(assignments):
     print('Saving temp data as: temp_dataframe.h5')
 
 time_taken = time.time() - absolute_reference_time
+
+time.sleep(2)
+source.close()
+sb.close()
+
+
 meta_df = pd.DataFrame(
     data={'delay': delay, 'repeats': repeats, 'channel': channel, 'volt_range': volt_range, 'width': width,
           'compliance': compliance, 'bias': bias, 'absolute_reference_time': absolute_reference_time,
@@ -138,6 +139,3 @@ else:
 
 plt.show()
 
-time.sleep(2)
-source.close()
-sb.close()
