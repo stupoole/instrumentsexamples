@@ -11,9 +11,6 @@ from tkinter import filedialog as dialog
 matplotlib.use('Qt5Agg')
 
 
-
-
-
 class Plotter:
     """
 
