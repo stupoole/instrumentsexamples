@@ -48,34 +48,40 @@ class DeltaPlotter:
                                            settings["repeats"], settings["bias"], 'best')
         self.source.configure_pulse(settings["width"], 1, 1)
 
-        print(f'Switching to {settings["assignment"]}')
-        self.sb.switch(settings["assignment"])
+        print(f'Switching to {settings["assignment"][0]}')
+        self.sb.switch(settings["assignment"][0])
         time.sleep(1)
         print('Arming pulse')
         self.source.arm_pulse_sweep()
+
         time.sleep(2)
         print('Starting measurement')
 
         while self._is_running:
-            probe_time = time.time()
+            probe_time = time.time() - self.absolute_reference_time
             self.source.trigger()
-            time.sleep(0.5)
-            data = self.source.get_trace()
+            time.sleep(1)
+            data = self.source.get_trace_fast()
             voltage_data = data[0::2]
             time_data = data[1::2] + probe_time
             self.plot_queue.put((time_data, voltage_data, self.currents))
 
     def do_plotting(self):
-        times = []
-        currents = []
-        voltages = []
-        resistances = []
+        times_pos = []
+        times_neg = []
+        currents_pos = []
+        currents_neg = []
+        voltages_pos = []
+        resistances_pos = []
+        voltages_neg = []
+        resistances_neg = []
         figure = plt.figure(1)
         figure.canvas.set_window_title('Resistance Plots')
         ax = figure.add_subplot(111)
         plt.xlabel('Time(s)')
         plt.ylabel('Resistance (Ohms)')
-        resistance_line, = ax.plot(times, resistances, 'r-')
+        resistance_pos_line, = ax.plot(times_pos, resistances_pos, 'b+--')
+        resistance_neg_line, = ax.plot(times_neg, resistances_neg, 'r+--')
         stop_button_axes = plt.axes([0.81, 0.025, 0.1, 0.055])
         stop_button = Button(stop_button_axes, 'Stop')
         stop_button.on_clicked(self.stop_button_callback)
@@ -86,25 +92,38 @@ class DeltaPlotter:
         while self._is_running:
             while not self.plot_queue.empty():
                 t, v, c = self.plot_queue.get()
-                times.append(t)
-                currents.append(c)
-                voltages.append(v)
-                resistances.append(v / c)
 
-                indices = [ind for ind, val in enumerate(times) if val > times[-1] - self.settings["max_time"]]
-                plot_times = [times[i] - times[0] for i in indices]
-                plot_resistances = [resistances[i] for i in indices]
+                times_pos.append(t[0])
+                currents_pos.append(c[0])
+                voltages_pos.append(v[0])
+                resistances_pos.append(v[0] / c[0])
 
-                resistance_line.set_xdata(plot_times)
-                resistance_line.set_ydata(plot_resistances)
+                times_neg.append(t[1])
+                currents_neg.append(c[1])
+                voltages_neg.append(v[1])
+                resistances_neg.append(v[1] / c[1])
+
+                indices = [ind for ind, val in enumerate(times_pos) if val > times_pos[-1] - self.settings["max_time"]]
+                plot_pos_times = [times_pos[i] - times_pos[0] for i in indices]
+                plot_pos_resistances = [resistances_pos[i] for i in indices]
+                resistance_pos_line.set_xdata(plot_pos_times)
+                resistance_pos_line.set_ydata(plot_pos_resistances)
+                plot_neg_times = [times_neg[i] - times_pos[0] for i in indices]
+                plot_neg_resistances = [resistances_neg[i] for i in indices]
+                resistance_neg_line.set_xdata(plot_neg_times)
+                resistance_neg_line.set_ydata(plot_neg_resistances)
+
                 ax.relim()
                 ax.autoscale_view()
 
                 figure.canvas.draw()
                 figure.canvas.flush_events()
-        meta_df = pd.DataFrame(settings.update({"absolute_reference_time": self.absolute_reference_time}))
-        data_df = pd.DataFrame({'I': currents, 'V': voltages, 't': times, 'probe': ass_to_str(settings["assignment"]),
-                                'type': 'contiuous'})
+
+        settings.update({"absolute_reference_time": self.absolute_reference_time})
+        meta_df = pd.DataFrame(settings)
+        data_df = pd.DataFrame(
+            {'I+': currents_pos, 'V+': voltages_pos, 't+': times_pos, 'I-': currents_neg, 'V-': voltages_neg,
+             't-': times_neg, 'probe': ass_to_str(settings["assignment"][0]), 'type': 'contiuous'})
         name = dialog.asksaveasfilename(title='Save')
         name = name.replace('.txt', '')
         name = name.replace('.hdf', '')
@@ -130,15 +149,15 @@ class DeltaPlotter:
 if __name__ == '__main__':
     settings = {
         "pulse_current": 15e-3,  # Used 15mA to RC124 10um, 10mA for RC123 10um UJ, 5mA for RC123 5um UJ
-        "delay": 1,
+        "delay": 0.25,
         "repeats": 1,
         "channel": 1,
-        "volt_range": 100e-3,  # 10 for Rxx # 100e-3 for Rxy sweep 1
+        "volt_range": 1000e-3,  # 10 for Rxx # 100e-3 for Rxy sweep 1
         "width": 500e-6,
         "compliance": 40,
         "bias": 0.0,
-        "assignment": {"I+": "A", "I-": "E", "V2+": "C", "V2-": "G"},
-        "sb_port": 11,
+        "assignment": [{"I+": "A", "I-": "E", "V2+": "C", "V2-": "G"}],
+        "sb_port": 5,
         "max_time": 3600
     }
 
